@@ -289,7 +289,7 @@ int main(int argc, char** argv)
     image = imread(sourceFilePath, cv::IMREAD_COLOR);
     if (!image.data)                              // Check for invalid input
     {
-        cout << "Could not open or find the image" << std::endl;
+        cout << "Could not open or find the image: " << sourceFilePath << std::endl;
         return -1;
     }
 
