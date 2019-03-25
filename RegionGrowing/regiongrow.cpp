@@ -3,6 +3,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include <iostream>
 #include <queue>
+#include <array>
 
 using namespace cv;
 using namespace std;
@@ -135,16 +136,15 @@ void applySobel(Mat& orgimg,Mat& dstBuffer) {
     abs_grad_y.release();
 }
 
-Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift) {
-    int maxPix = 80000;
+Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift,int maxPix) {
+    //int maxPix = 80000;
     int orgw = orgimg.cols;
     int orgh = orgimg.rows;
 
     vector<Mat> hsvChannels(3);
     Mat fullSobelImg;
     Mat scaledSobelImg;
-    Mat grayImg;
-
+    //Mat grayImg;
     
     Mat fullHsvImage;
     cvtColor(orgimg, fullHsvImage, cv::COLOR_BGR2HSV);
@@ -185,7 +185,7 @@ Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift) {
     double stepSizeX = (double)colw / seeddensity.x;
     double stepSizeY = (double)colh / seeddensity.y;
 
-    int minRegionSize = 6;
+    //int minRegionSize = 6;
 
     //Mat allRegionBuffer;
     //Mat allRegionBuffer(colh, colw, CV_8U);
@@ -208,7 +208,7 @@ Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift) {
             if ((int)allRegionBuffer.at<uchar>(selectedSeedPoint.y, selectedSeedPoint.x) == 0) {
                 regionSize = growRegionColMin(hsvImg, scaledSobelImg, selectedSeedPoint, neighborhood, maxShift, regionBuffer, allRegionBuffer, regionImg);
             
-                if (regionSize > maxPix/1000) {
+                /*if (regionSize > maxPix/1000) {
                     resize(regionBuffer, scaledRegionBuffer, Size(orgw, orgh),0,0, INTER_NEAREST);
                     char windowname[100];
                     int blurSize = 8;
@@ -219,30 +219,39 @@ Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift) {
                     //threshold(scaledRegionBuffer, scaledRegionBuffer, 120, 255, THRESH_BINARY);
                     //GaussianBlur(scaledRegionBuffer, scaledRegionBuffer, Size(5, 5), 0.6, 0.6);
                     sprintf(windowname, "region res %d %d", selectedSeedPoint.x, selectedSeedPoint.y);
-                    namedWindow(windowname, WINDOW_AUTOSIZE);// Create a window for display.
-                    imshow(windowname, scaledRegionBuffer);
-                }
+                    //namedWindow(windowname, WINDOW_AUTOSIZE);// Create a window for display.
+                    //imshow(windowname, scaledRegionBuffer);
+                }*/
             }
         }
     }
 
     zeroColBuffer.release();
     regionBuffer.release();
+    allRegionBuffer.release();
+    scaledRegionBuffer.release();
+    scaledSobelImg.release();
+    fullHsvImage.release();
 
-    Mat result1, result2, result3;
-    resize(regionImg, result1, Size(orgw,orgh),0,0,0);
-    resize(hsvImg, result2, Size(orgw, orgh), 0, 0, 0);
-    cvtColor(result1, result3, cv::COLOR_HSV2BGR);
+    Mat orgSizeHsvRegions, orgSizeRgbRegions;
+    resize(regionImg, orgSizeHsvRegions, Size(orgw, orgh), 0, 0, 0);
+    cvtColor(orgSizeHsvRegions, orgSizeRgbRegions, cv::COLOR_HSV2BGR);
     //blur(result3, result3, Size(3, 3));
 
+#ifndef NDEBUG // Debug mode
+#ifdef _WIN32
+
+    Mat resizedHsv;
+    resize(hsvImg, resizedHsv, Size(orgw, orgh), 0, 0, 0);
+
     namedWindow("Displayxx window", WINDOW_AUTOSIZE);// Create a window for display.
-    imshow("Displayxx window", result3);
-    namedWindow("Display window", WINDOW_AUTOSIZE);// Create a window for display.
-    imshow("Display window", result1);
+    //imshow("Displayxx window", orgSizeRgbRegions);
+    //namedWindow("Display window", WINDOW_AUTOSIZE);// Create a window for display.
+    imshow("Display window", orgSizeHsvRegions);
     namedWindow("Displayhsv window", WINDOW_AUTOSIZE);// Create a window for display.
-    imshow("Displayhsv window", result2);
+    imshow("Displayhsv window", resizedHsv);
     namedWindow("Displayxx window", WINDOW_AUTOSIZE);// Create a window for display.
-    imshow("Displayxx window", result3);
+    imshow("Displayxx window", orgSizeRgbRegions);
     namedWindow("Display2 window", WINDOW_AUTOSIZE);// Create a window for display.
     imshow("Display2 window", fullSobelImg);
     namedWindow("Display3 window", WINDOW_AUTOSIZE);// Create a window for display.
@@ -250,37 +259,52 @@ Mat growRegionGrid(Mat& orgimg, Point2i seeddensity, Vec3b maxShift) {
     namedWindow("Display4 window", WINDOW_AUTOSIZE);// Create a window for display.
     imshow("Display4 window", colImg);
 
-    return regionImg;
+    resizedHsv.release();
+
+#endif // _WIN32
+#endif // NDEBUG
+
+    fullSobelImg.release();
+    colImg.release();
+    fullSobelImg.release();
+    orgSizeHsvRegions.release();
+    regionImg.release();
+    hsvImg.release();
+
+    return orgSizeRgbRegions;
 }
 
 int main(int argc, char** argv)
 {
+    cout << "Starting regiongrowing main" << endl;
 
-    cout << " TEst --------------------------" << endl;
+#ifdef NDEBUG
+    string sourceFilePath = argv[1];
+#else
+    string sourceFilePath = "C:\\Users\\Max\\Pictures\\53146095_10155809091156428_4847299437430571008_n.jpg";
+#endif
 
-    /*if (argc != 2)
-    {
-        cout << " Usage: display_image ImageToLoadAndDisplay" << endl;
-        return -1;
-    }*/
 
     Mat image;
-
-    string filepath = "C:\\Users\\Max\\Pictures\\53146095_10155809091156428_4847299437430571008_n.jpg";
-    image = imread(filepath, cv::IMREAD_COLOR);
-    //image = imread(argv[1], CV_LOAD_IMAGE_COLOR);   // Read the file
-
+    image = imread(sourceFilePath, cv::IMREAD_COLOR);
     if (!image.data)                              // Check for invalid input
     {
         cout << "Could not open or find the image" << std::endl;
         return -1;
     }
 
-    growRegionGrid(image, Point2i(1000, 1000), Vec3b(20,50,100));
+    Mat resultImg = growRegionGrid(image, Point2i(10000, 10000), Vec3b(20,50,100),200000);
 
-    //namedWindow("Display window", WINDOW_AUTOSIZE);// Create a window for display.
-    //imshow("Display window", image);                   // Show our image inside it.
+#ifdef NDEBUG //Release Mode
+    string destinationFilePath = argv[2];
+    printf("Writing img to %s", destinationFilePath);
+    imwrite(destinationFilePath, resultImg);
+#elif _WIN32 // debugging under windows
+    waitKey(0);// Wait for a keystroke in the window
+#endif //  NDEBUG  
 
-    waitKey(0);                                          // Wait for a keystroke in the window
+    image.release();
+    resultImg.release();
+
     return 0;
 }

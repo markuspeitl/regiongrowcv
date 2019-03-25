@@ -1,3 +1,9 @@
 */Debug
 */x64
 *.opendb
+*/x64
+*/Debug
+*/Release
+*.db
+*.VC.db
+*/linux/

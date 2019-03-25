@@ -1,0 +1,1 @@
+C:\Windows\System32\bash.exe ./build-linux.sh
